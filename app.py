@@ -19,7 +19,8 @@ Run:
 import io
 import json
 import os
-from datetime import datetime
+import subprocess
+from datetime import datetime, timezone
 
 from flask import Flask, jsonify, render_template, request, send_file
 
@@ -47,6 +48,24 @@ DPI          = 200
 
 app = Flask(__name__)
 
+
+def _get_version():
+    """Short git commit hash — Render sets RENDER_GIT_COMMIT automatically
+    on every deploy, so this always reflects what's actually running."""
+    commit = os.environ.get("RENDER_GIT_COMMIT")
+    if commit:
+        return commit[:7]
+    try:
+        return subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"], cwd=HERE, stderr=subprocess.DEVNULL
+        ).decode().strip()
+    except Exception:
+        return "dev"
+
+
+APP_VERSION = _get_version()
+DEPLOYED_AT = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")  # process start time
+
 _fullres_gdf = None  # lazy-loaded, cached full-resolution FIR GeoDataFrame
 
 
@@ -65,7 +84,7 @@ def get_fullres_gdf():
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    return render_template("index.html", version=APP_VERSION, deployed_at=DEPLOYED_AT)
 
 
 @app.route("/api/firs")

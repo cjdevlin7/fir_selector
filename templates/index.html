@@ -52,8 +52,11 @@
     </section>
 
     <footer class="sb-footer">
-      <div id="selectedCount" class="selected-count">0 selected</div>
-      <button id="exportBtn" class="export-btn">Export PNG</button>
+      <div class="sb-footer-row">
+        <div id="selectedCount" class="selected-count">0 selected</div>
+        <button id="exportBtn" class="export-btn">Export PNG</button>
+      </div>
+      <div class="version-info">v{{ version }} · deployed {{ deployed_at }}</div>
     </footer>
   </aside>
 
