@@ -16,6 +16,7 @@ Run:
     -> http://localhost:5002
 """
 
+import colorsys
 import io
 import json
 import os
@@ -47,6 +48,28 @@ FIG_W, FIG_H = 24, 12
 DPI          = 200
 
 app = Flask(__name__)
+
+
+def _shade(hex_color, delta):
+    """Lighten (delta>0) or darken (delta<0) a hex color in HSL space."""
+    hex_color = hex_color.lstrip("#")
+    r, g, b = (int(hex_color[i:i + 2], 16) / 255 for i in (0, 2, 4))
+    h, l, s = colorsys.rgb_to_hls(r, g, b)
+    l = max(0.0, min(1.0, l + delta))
+    r, g, b = colorsys.hls_to_rgb(h, l, s)
+    return "#{:02x}{:02x}{:02x}".format(round(r * 255), round(g * 255), round(b * 255))
+
+
+def _land_ocean_tones(bg_color):
+    """Land/ocean fills a shade off the background, so continents read as
+    shapes (like the CartoDB tiles on the interactive map) instead of
+    disappearing into a flat background."""
+    hex_color = bg_color.lstrip("#")
+    r, g, b = (int(hex_color[i:i + 2], 16) / 255 for i in (0, 2, 4))
+    _, l, _ = colorsys.rgb_to_hls(r, g, b)
+    if l < 0.5:
+        return _shade(bg_color, 0.07), _shade(bg_color, -0.04)  # land lighter, ocean darker
+    return _shade(bg_color, -0.06), _shade(bg_color, 0.05)      # land darker, ocean lighter
 
 
 def _get_version():
@@ -126,17 +149,22 @@ def api_render():
     fig.patch.set_facecolor(bg_color)
     ax.set_facecolor(bg_color)
 
-    ax.add_feature(cfeature.LAND.with_scale("110m"), facecolor=bg_color, zorder=0)
-    ax.add_feature(cfeature.OCEAN.with_scale("110m"), facecolor=bg_color, zorder=0)
+    land_color, ocean_color = _land_ocean_tones(bg_color)
+    ax.add_feature(cfeature.LAND.with_scale("110m"), facecolor=land_color, zorder=0)
+    ax.add_feature(cfeature.OCEAN.with_scale("110m"), facecolor=ocean_color, zorder=0)
     ax.add_feature(cfeature.COASTLINE.with_scale("110m"),
                     edgecolor=COAST_COLOR, linewidth=0.35, alpha=0.80, zorder=3)
     ax.add_feature(cfeature.BORDERS.with_scale("110m"),
                     edgecolor=BORDER_COLOR, linewidth=0.25, alpha=0.65, zorder=3)
 
-    # All FIR outlines, faint, as base context.
-    gdf.boundary.plot(ax=ax, transform=ccrs.PlateCarree(),
-                       edgecolor=FIR_EDGE_CLR, linewidth=FIR_EDGE_W,
-                       alpha=FIR_EDGE_A, zorder=10)
+    # All FIR outlines, faint, as base context. Uses cartopy's add_geometries
+    # (same mechanism as add_feature above) rather than geopandas' .plot(),
+    # which mutates ax.dataLim as a side effect — with a small selected
+    # subset plotted afterwards, that corrupts the box/data scaling and
+    # visibly warps or mis-scales whatever was plotted through it.
+    ax.add_geometries(gdf.geometry, ccrs.PlateCarree(),
+                       facecolor="none", edgecolor=FIR_EDGE_CLR,
+                       linewidth=FIR_EDGE_W, alpha=FIR_EDGE_A, zorder=10)
 
     # Selected FIRs, colored on top — fill + bright edge.
     if selections:
@@ -144,10 +172,12 @@ def api_render():
             sub = gdf[gdf["id"] == fid]
             if sub.empty:
                 continue
-            sub.plot(ax=ax, transform=ccrs.PlateCarree(),
-                     facecolor=color, alpha=0.35, edgecolor="none", zorder=11)
-            sub.boundary.plot(ax=ax, transform=ccrs.PlateCarree(),
-                               edgecolor=color, linewidth=0.9, alpha=0.95, zorder=12)
+            ax.add_geometries(sub.geometry, ccrs.PlateCarree(),
+                               facecolor=color, edgecolor="none",
+                               alpha=0.35, zorder=11)
+            ax.add_geometries(sub.geometry, ccrs.PlateCarree(),
+                               facecolor="none", edgecolor=color,
+                               linewidth=0.9, alpha=0.95, zorder=12)
 
     buf = io.BytesIO()
     plt.savefig(buf, format="png", facecolor=bg_color)
