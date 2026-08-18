@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "fir-selector",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "cd /Users/chris.devlin_1/Python/FIR_Selector && python3 app.py"],
+      "port": 5002
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FIR Selector</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<div id="app">
+
+  <aside id="sidebar">
+    <header class="sb-header">
+      <h1>FIR Selector</h1>
+      <p class="sb-sub">Click FIRs on the map or in the list, assign colors, export a PNG.</p>
+    </header>
+
+    <section class="sb-section">
+      <h2>Color</h2>
+      <div id="palette" class="palette"></div>
+      <div class="custom-color-row">
+        <label for="customColor">Custom</label>
+        <input type="color" id="customColor" value="#00D4FF">
+      </div>
+      <div class="active-color-row">
+        <span>Active color</span>
+        <span id="activeColorSwatch" class="swatch-preview"></span>
+      </div>
+    </section>
+
+    <section class="sb-section">
+      <h2>Background</h2>
+      <div class="bg-row">
+        <button id="bgDefaultBtn" class="bg-chip" data-bg="#1C242B">Dark (default)</button>
+        <button id="bgLightBtn" class="bg-chip" data-bg="#F4F5F7">Light</button>
+        <input type="color" id="customBg" value="#1C242B" title="Custom background">
+      </div>
+    </section>
+
+    <section class="sb-section grow">
+      <h2>FIRs <span id="firCount" class="count-badge"></span></h2>
+      <input type="text" id="searchBox" placeholder="Search by name or ICAO id…" autocomplete="off">
+      <div class="list-actions">
+        <button id="selectAllBtn" class="link-btn">Select filtered</button>
+        <button id="clearBtn" class="link-btn">Clear all</button>
+      </div>
+      <div id="firList" class="fir-list"></div>
+    </section>
+
+    <footer class="sb-footer">
+      <div id="selectedCount" class="selected-count">0 selected</div>
+      <button id="exportBtn" class="export-btn">Export PNG</button>
+    </footer>
+  </aside>
+
+  <main id="mapWrap">
+    <div id="map"></div>
+    <div id="loadingOverlay" class="loading-overlay hidden">
+      <div class="spinner"></div>
+      <div id="loadingText">Rendering…</div>
+    </div>
+  </main>
+
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

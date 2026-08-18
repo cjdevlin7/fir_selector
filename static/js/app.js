@@ -1,0 +1,308 @@
+// FIR Selector — map + sidebar wiring.
+
+const PALETTE = [
+  "#EF4444", "#F97316", "#F59E0B", "#EAB308",
+  "#84CC16", "#22C55E", "#10B981", "#14B8A6",
+  "#06B6D4", "#0EA5E9", "#3B82F6", "#6366F1",
+  "#8B5CF6", "#A855F7", "#D946EF", "#EC4899",
+];
+
+const DEFAULT_EDGE = "#4A5568";
+
+const state = {
+  activeColor: PALETTE[10],       // color applied on next click
+  background: "#1C242B",
+  selections: new Map(),          // fir id -> color
+  features: new Map(),            // fir id -> {name, icao, layer}
+  filterText: "",
+};
+
+// ── Map setup ────────────────────────────────────────────────────────────
+
+const map = L.map("map", {
+  center: [20, 10],
+  zoom: 3,
+  minZoom: 2,
+  maxZoom: 8,
+  worldCopyJump: true,
+  preferCanvas: true,
+});
+
+L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+  subdomains: "abcd",
+  maxZoom: 19,
+}).addTo(map);
+
+const renderer = L.canvas({ padding: 0.4 });
+let geoLayer = null;
+
+function baseStyle() {
+  return { color: DEFAULT_EDGE, weight: 0.6, opacity: 0.55, fillOpacity: 0 };
+}
+
+function selectedStyle(color) {
+  return { color, weight: 1.6, opacity: 0.95, fillColor: color, fillOpacity: 0.22 };
+}
+
+function styleFor(id) {
+  return state.selections.has(id) ? selectedStyle(state.selections.get(id)) : baseStyle();
+}
+
+function restyle(id) {
+  const f = state.features.get(id);
+  if (f && f.layer) f.layer.setStyle(styleFor(id));
+}
+
+// ── Load FIR polygons ───────────────────────────────────────────────────
+
+fetch("/api/firs")
+  .then((r) => r.json())
+  .then((geojson) => {
+    geoLayer = L.geoJSON(geojson, {
+      renderer,
+      style: (feature) => styleFor(feature.properties.id),
+      onEachFeature: (feature, layer) => {
+        const p = feature.properties;
+        state.features.set(p.id, { name: p.volumeName, icao: p.icaoID, layer });
+
+        layer.bindTooltip(
+          `${p.volumeName}${p.icaoID ? `<span class="icao"> ${p.icaoID}</span>` : ""}`,
+          { className: "fir-tooltip", sticky: true }
+        );
+
+        layer.on("click", () => toggleSelection(p.id));
+        layer.on("mouseover", () => layer.setStyle({ weight: state.selections.has(p.id) ? 2.4 : 1.4 }));
+        layer.on("mouseout", () => restyle(p.id));
+      },
+    }).addTo(map);
+
+    document.getElementById("firCount").textContent = `(${state.features.size})`;
+    renderList();
+  })
+  .catch((err) => {
+    console.error("Failed to load FIR data", err);
+    document.getElementById("firList").textContent = "Failed to load FIR data.";
+  });
+
+// ── Selection logic ─────────────────────────────────────────────────────
+
+function toggleSelection(id) {
+  if (state.selections.has(id)) {
+    state.selections.delete(id);
+  } else {
+    state.selections.set(id, state.activeColor);
+  }
+  restyle(id);
+  renderRowState(id);
+  updateFooter();
+}
+
+function setSelectionColor(id, color) {
+  state.selections.set(id, color);
+  restyle(id);
+  renderRowState(id);
+}
+
+function clearAll() {
+  const ids = [...state.selections.keys()];
+  state.selections.clear();
+  ids.forEach((id) => {
+    restyle(id);
+    renderRowState(id);
+  });
+  updateFooter();
+}
+
+function selectAllFiltered() {
+  const ids = filteredIds();
+  ids.forEach((id) => {
+    state.selections.set(id, state.activeColor);
+    restyle(id);
+    renderRowState(id);
+  });
+  updateFooter();
+}
+
+function updateFooter() {
+  const n = state.selections.size;
+  document.getElementById("selectedCount").textContent = `${n} selected`;
+  document.getElementById("exportBtn").disabled = n === 0;
+}
+
+// ── Sidebar: palette ─────────────────────────────────────────────────────
+
+const paletteEl = document.getElementById("palette");
+PALETTE.forEach((color) => {
+  const btn = document.createElement("button");
+  btn.style.background = color;
+  btn.dataset.color = color;
+  btn.title = color;
+  if (color === state.activeColor) btn.classList.add("active");
+  btn.addEventListener("click", () => setActiveColor(color));
+  paletteEl.appendChild(btn);
+});
+
+const customColorInput = document.getElementById("customColor");
+customColorInput.addEventListener("input", (e) => setActiveColor(e.target.value.toUpperCase(), true));
+
+function setActiveColor(color, fromCustom = false) {
+  state.activeColor = color;
+  document.getElementById("activeColorSwatch").style.background = color;
+  [...paletteEl.children].forEach((b) => b.classList.toggle("active", b.dataset.color === color));
+  if (!fromCustom) customColorInput.value = color;
+}
+setActiveColor(state.activeColor);
+
+// ── Sidebar: background ──────────────────────────────────────────────────
+
+const bgButtons = document.querySelectorAll(".bg-chip");
+const customBgInput = document.getElementById("customBg");
+
+function setBackground(color) {
+  state.background = color;
+  bgButtons.forEach((b) => b.classList.toggle("active", b.dataset.bg === color));
+  customBgInput.value = color;
+  map.getContainer().style.background = color;
+}
+bgButtons.forEach((b) => b.addEventListener("click", () => setBackground(b.dataset.bg)));
+customBgInput.addEventListener("input", (e) => setBackground(e.target.value.toUpperCase()));
+setBackground(state.background);
+
+// ── Sidebar: FIR list ─────────────────────────────────────────────────────
+
+const firListEl = document.getElementById("firList");
+const searchBox = document.getElementById("searchBox");
+
+function filteredIds() {
+  const q = state.filterText.trim().toLowerCase();
+  const ids = [...state.features.keys()];
+  if (!q) return ids;
+  return ids.filter((id) => {
+    const f = state.features.get(id);
+    return f.name.toLowerCase().includes(q) || (f.icao && f.icao.toLowerCase().includes(q));
+  });
+}
+
+function renderList() {
+  const ids = filteredIds().sort((a, b) =>
+    state.features.get(a).name.localeCompare(state.features.get(b).name)
+  );
+
+  firListEl.innerHTML = "";
+  const frag = document.createDocumentFragment();
+
+  ids.forEach((id) => {
+    const f = state.features.get(id);
+    const row = document.createElement("div");
+    row.className = "fir-row";
+    row.dataset.id = id;
+
+    const dot = document.createElement("span");
+    dot.className = "dot";
+
+    const name = document.createElement("span");
+    name.className = "name";
+    name.textContent = f.name;
+
+    const icao = document.createElement("span");
+    icao.className = "icao";
+    icao.textContent = f.icao || "";
+
+    const remove = document.createElement("button");
+    remove.className = "remove";
+    remove.textContent = "×";
+    remove.title = "Remove";
+    remove.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (state.selections.has(id)) toggleSelection(id);
+    });
+
+    row.append(dot, name, icao, remove);
+    row.addEventListener("click", () => {
+      toggleSelection(id);
+      focusFeature(id);
+    });
+
+    applyRowState(row, id);
+    frag.appendChild(row);
+  });
+
+  firListEl.appendChild(frag);
+}
+
+function applyRowState(row, id) {
+  const selected = state.selections.has(id);
+  row.classList.toggle("selected", selected);
+  row.querySelector(".dot").style.background = selected ? state.selections.get(id) : "transparent";
+}
+
+function renderRowState(id) {
+  const row = firListEl.querySelector(`.fir-row[data-id="${CSS.escape(id)}"]`);
+  if (row) applyRowState(row, id);
+}
+
+function focusFeature(id) {
+  const f = state.features.get(id);
+  if (f && f.layer && f.layer.getBounds) {
+    map.fitBounds(f.layer.getBounds(), { maxZoom: 6, padding: [40, 40] });
+  }
+}
+
+let searchDebounce;
+searchBox.addEventListener("input", (e) => {
+  clearTimeout(searchDebounce);
+  searchDebounce = setTimeout(() => {
+    state.filterText = e.target.value;
+    renderList();
+  }, 120);
+});
+
+document.getElementById("selectAllBtn").addEventListener("click", selectAllFiltered);
+document.getElementById("clearBtn").addEventListener("click", clearAll);
+
+// ── Export ────────────────────────────────────────────────────────────────
+
+const exportBtn = document.getElementById("exportBtn");
+const overlay = document.getElementById("loadingOverlay");
+
+exportBtn.addEventListener("click", async () => {
+  if (state.selections.size === 0) return;
+  overlay.classList.remove("hidden");
+  exportBtn.disabled = true;
+
+  try {
+    const body = {
+      selections: Object.fromEntries(state.selections),
+      background: state.background,
+    };
+    const resp = await fetch("/api/render", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!resp.ok) throw new Error(`Render failed: ${resp.status}`);
+
+    const disposition = resp.headers.get("Content-Disposition") || "";
+    const match = disposition.match(/filename="?([^"]+)"?/);
+    const filename = match ? match[1] : "fir_map.png";
+
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error(err);
+    alert("Export failed. Check the server console for details.");
+  } finally {
+    overlay.classList.add("hidden");
+    exportBtn.disabled = state.selections.size === 0;
+  }
+});
+
+updateFooter();
