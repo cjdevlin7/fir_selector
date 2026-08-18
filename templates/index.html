@@ -40,6 +40,10 @@
         <button id="bgLightBtn" class="bg-chip" data-bg="#F4F5F7">Light</button>
         <input type="color" id="customBg" value="#1C242B" title="Custom background">
       </div>
+      <label class="logo-checkbox">
+        <input type="checkbox" id="includeLogo">
+        <span>Include Aireon Logo</span>
+      </label>
     </section>
 
     <section class="sb-section grow">
@@ -63,6 +67,11 @@
 
   <main id="mapWrap">
     <div id="map"></div>
+
+    <div id="logoPreviewSwatch" class="logo-preview-swatch" hidden>
+      <img id="logoPreview" class="logo-preview-img" alt="Aireon logo preview">
+    </div>
+
     <div id="loadingOverlay" class="loading-overlay hidden">
       <div class="spinner"></div>
       <div id="loadingText">Rendering…</div>

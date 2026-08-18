@@ -33,7 +33,10 @@ const map = L.map("map", {
   maxBounds: [[-90, -180], [90, 180]],
   maxBoundsViscosity: 1.0,
   preferCanvas: true,
+  attributionControl: false, // re-added bottom-left below, freeing bottom-right for the logo control
 });
+
+L.control.attribution({ position: "bottomleft" }).addTo(map);
 
 const TILE_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
 
@@ -198,9 +201,32 @@ function setBackground(color) {
   customBgInput.value = color;
   map.getContainer().style.background = color;
   applyMapTheme(color);
+  updateLogoPreview();
 }
 bgButtons.forEach((b) => b.addEventListener("click", () => setBackground(b.dataset.bg)));
 customBgInput.addEventListener("input", (e) => setBackground(e.target.value.toUpperCase()));
+
+// ── Sidebar: logo ────────────────────────────────────────────────────────
+
+state.includeLogo = false;
+
+const includeLogoCheckbox = document.getElementById("includeLogo");
+const logoPreviewSwatch = document.getElementById("logoPreviewSwatch");
+const logoPreviewImg = document.getElementById("logoPreview");
+
+function updateLogoPreview() {
+  logoPreviewImg.src = hexIsDark(state.background)
+    ? "/static/img/aireon_logo_white.png"
+    : "/static/img/aireon_logo_dark.png";
+  logoPreviewSwatch.style.background = state.background;
+  logoPreviewSwatch.hidden = !state.includeLogo;
+}
+
+includeLogoCheckbox.addEventListener("change", (e) => {
+  state.includeLogo = e.target.checked;
+  updateLogoPreview();
+});
+
 setBackground(state.background);
 
 // ── Sidebar: FIR list ─────────────────────────────────────────────────────
@@ -309,6 +335,7 @@ exportBtn.addEventListener("click", async () => {
     const body = {
       selections: Object.fromEntries(state.selections),
       background: state.background,
+      include_logo: state.includeLogo,
     };
     const resp = await fetch("/api/render", {
       method: "POST",

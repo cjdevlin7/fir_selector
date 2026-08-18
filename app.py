@@ -24,6 +24,7 @@ import subprocess
 from datetime import datetime, timezone
 
 from flask import Flask, jsonify, render_template, request, send_file
+from PIL import Image
 
 import matplotlib as mpl
 mpl.use("Agg")
@@ -35,6 +36,8 @@ import geopandas as gpd
 HERE            = os.path.dirname(os.path.abspath(__file__))
 SIMPLIFIED_PATH = os.path.join(HERE, "data", "firs_simplified.geojson")
 FULLRES_PATH    = os.path.join(HERE, "data", "Global_FIRs.geojson")
+LOGO_WHITE_PATH = os.path.join(HERE, "static", "img", "aireon_logo_white.png")
+LOGO_DARK_PATH  = os.path.join(HERE, "static", "img", "aireon_logo_dark.png")
 
 # ── Map style (matches Global_Maps.py) ─────────────────────────────────────
 MAP_BG       = "#1C242B"
@@ -60,16 +63,44 @@ def _shade(hex_color, delta):
     return "#{:02x}{:02x}{:02x}".format(round(r * 255), round(g * 255), round(b * 255))
 
 
+def _is_dark(hex_color):
+    hex_color = hex_color.lstrip("#")
+    r, g, b = (int(hex_color[i:i + 2], 16) / 255 for i in (0, 2, 4))
+    _, l, _ = colorsys.rgb_to_hls(r, g, b)
+    return l < 0.5
+
+
 def _land_ocean_tones(bg_color):
     """Land/ocean fills a shade off the background, so continents read as
     shapes (like the CartoDB tiles on the interactive map) instead of
     disappearing into a flat background."""
-    hex_color = bg_color.lstrip("#")
-    r, g, b = (int(hex_color[i:i + 2], 16) / 255 for i in (0, 2, 4))
-    _, l, _ = colorsys.rgb_to_hls(r, g, b)
-    if l < 0.5:
+    if _is_dark(bg_color):
         return _shade(bg_color, 0.07), _shade(bg_color, -0.04)  # land lighter, ocean darker
     return _shade(bg_color, -0.06), _shade(bg_color, 0.05)      # land darker, ocean lighter
+
+
+def _composite_logo(png_bytes, bg_color):
+    """Paste the Aireon logo (white on dark backgrounds, dark on light ones)
+    in the bottom-right corner, sized to stay legible without dominating.
+    Shifted left of the true corner so it lands on the solid body of
+    Antarctica rather than the jagged coastline right at the edge."""
+    im = Image.open(io.BytesIO(png_bytes)).convert("RGBA")
+    logo_path = LOGO_WHITE_PATH if _is_dark(bg_color) else LOGO_DARK_PATH
+    logo = Image.open(logo_path).convert("RGBA")
+
+    target_w = round(im.width * 0.12)
+    target_h = round(logo.height * (target_w / logo.width))
+    logo = logo.resize((target_w, target_h), Image.LANCZOS)
+
+    margin_right = round(im.width * 0.09)
+    margin_bottom = round(im.width * 0.015)
+    pos = (im.width - logo.width - margin_right, im.height - logo.height - margin_bottom)
+    im.alpha_composite(logo, pos)
+
+    out = io.BytesIO()
+    im.convert("RGB").save(out, format="PNG")
+    out.seek(0)
+    return out
 
 
 def _get_version():
@@ -91,6 +122,14 @@ DEPLOYED_AT = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")  # proce
 
 # Newest first. Add an entry here with each user-visible change.
 CHANGELOG = [
+    {
+        "date": "2026-08-18",
+        "items": [
+            "Added an \"Include Aireon Logo\" option — white on dark backgrounds, "
+            "dark on light ones — shown as a live preview in the map's corner and "
+            "included in the exported PNG when checked.",
+        ],
+    },
     {
         "date": "2026-08-18",
         "items": [
@@ -173,12 +212,14 @@ def api_render():
 
     Body: {
       "selections": { "<fir id>": "#rrggbb", ... },
-      "background": "#1C242B"   (optional)
+      "background": "#1C242B",   (optional)
+      "include_logo": false      (optional)
     }
     """
-    payload     = request.get_json(force=True) or {}
-    selections  = payload.get("selections", {})
-    bg_color    = payload.get("background") or MAP_BG
+    payload      = request.get_json(force=True) or {}
+    selections   = payload.get("selections", {})
+    bg_color     = payload.get("background") or MAP_BG
+    include_logo = bool(payload.get("include_logo"))
 
     gdf = get_fullres_gdf()
 
@@ -231,6 +272,9 @@ def api_render():
     plt.savefig(buf, format="png", facecolor=bg_color)
     plt.close(fig)
     buf.seek(0)
+
+    if include_logo:
+        buf = _composite_logo(buf.getvalue(), bg_color)
 
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     return send_file(buf, mimetype="image/png",

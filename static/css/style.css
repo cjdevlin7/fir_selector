@@ -177,6 +177,17 @@ html, body {
   background: #22314a;
 }
 
+.logo-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+  user-select: none;
+}
+
 /* ── Search + list ───────────────────────────────────────────────────── */
 
 #searchBox {
@@ -331,6 +342,28 @@ html, body {
 }
 
 .leaflet-container { background: #1C242B; }
+
+.logo-preview-swatch {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 500;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo-preview-swatch[hidden] { display: none; }
+
+.logo-preview-img {
+  display: block;
+  max-width: 130px;
+  max-height: 32px;
+  object-fit: contain;
+}
 
 .fir-tooltip {
   background: var(--bg-card);
