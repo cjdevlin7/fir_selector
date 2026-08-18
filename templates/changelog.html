@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Change Log — FIR Selector</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="doc-body">
+<div class="doc-page">
+  <a href="{{ url_for('index') }}" class="back-link">← Back to FIR Selector</a>
+  <h1>Change Log</h1>
+  <p class="doc-sub">Currently running v{{ version }} · deployed {{ deployed_at }}</p>
+
+  {% for entry in entries %}
+  <div class="changelog-entry">
+    <div class="changelog-date">{{ entry.date }}</div>
+    <ul>
+      {% for item in entry['items'] %}
+      <li>{{ item }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endfor %}
+</div>
+</body>
+</html>

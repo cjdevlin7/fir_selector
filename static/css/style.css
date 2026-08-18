@@ -44,6 +44,17 @@ html, body {
   border-bottom: 1px solid var(--border);
 }
 
+.how-to-link {
+  display: inline-block;
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.how-to-link:hover { text-decoration: underline; }
+
 .sb-header h1 {
   font-size: 18px;
   font-weight: 650;
@@ -277,12 +288,19 @@ html, body {
 }
 
 .version-info {
+  display: block;
   margin-top: 10px;
   font-size: 11px;
   color: var(--text-dim);
   opacity: 0.7;
   text-align: center;
   font-variant-numeric: tabular-nums;
+  text-decoration: none;
+}
+
+.version-info:hover {
+  opacity: 1;
+  text-decoration: underline;
 }
 
 .export-btn {
@@ -354,4 +372,93 @@ html, body {
 #loadingText {
   font-size: 13px;
   color: var(--text-dim);
+}
+
+/* ── Doc pages (How To / Change Log) ─────────────────────────────────── */
+
+.doc-body {
+  background: var(--bg-app);
+  min-height: 100vh;
+}
+
+.doc-page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+  color: var(--text);
+}
+
+.back-link {
+  display: inline-block;
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 13px;
+  margin-bottom: 24px;
+}
+
+.back-link:hover { text-decoration: underline; }
+
+.doc-page h1 {
+  font-size: 26px;
+  font-weight: 650;
+  margin: 0 0 8px;
+  letter-spacing: -0.01em;
+}
+
+.doc-sub {
+  color: var(--text-dim);
+  font-size: 13px;
+  margin: 0 0 32px;
+}
+
+.doc-steps {
+  list-style: none;
+  margin: 32px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.doc-steps li {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 20px;
+}
+
+.doc-steps h2 {
+  font-size: 15px;
+  margin: 0 0 6px;
+}
+
+.doc-steps p {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.changelog-entry {
+  border-top: 1px solid var(--border);
+  padding: 20px 0;
+}
+
+.changelog-entry:first-of-type { border-top: none; }
+
+.changelog-date {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+
+.changelog-entry ul {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.6;
 }

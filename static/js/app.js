@@ -24,15 +24,48 @@ const map = L.map("map", {
   zoom: 3,
   minZoom: 2,
   maxZoom: 8,
-  worldCopyJump: true,
+  // A single, clamped world copy — with worldCopyJump the FIR overlay only
+  // ever exists in the original copy, so panning into a repeated copy (e.g.
+  // scrolling left past the edge to reach Australia) shows tiles that look
+  // right but sit over no clickable geometry at all. Capping the bounds
+  // means there's never a non-functional copy to scroll into.
+  worldCopyJump: false,
+  maxBounds: [[-90, -180], [90, 180]],
+  maxBoundsViscosity: 1.0,
   preferCanvas: true,
 });
 
-L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+const TILE_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
+
+const darkTiles = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+  attribution: TILE_ATTRIBUTION,
   subdomains: "abcd",
   maxZoom: 19,
-}).addTo(map);
+});
+
+const lightTiles = L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+  attribution: TILE_ATTRIBUTION,
+  subdomains: "abcd",
+  maxZoom: 19,
+});
+
+darkTiles.addTo(map);
+
+function hexIsDark(hex) {
+  const c = hex.replace("#", "");
+  const r = parseInt(c.substr(0, 2), 16) / 255;
+  const g = parseInt(c.substr(2, 2), 16) / 255;
+  const b = parseInt(c.substr(4, 2), 16) / 255;
+  const l = (Math.max(r, g, b) + Math.min(r, g, b)) / 2;
+  return l < 0.5;
+}
+
+function applyMapTheme(bgColor) {
+  const wanted = hexIsDark(bgColor) ? darkTiles : lightTiles;
+  const other = wanted === darkTiles ? lightTiles : darkTiles;
+  if (map.hasLayer(other)) map.removeLayer(other);
+  if (!map.hasLayer(wanted)) wanted.addTo(map);
+}
 
 const renderer = L.canvas({ padding: 0.4 });
 let geoLayer = null;
@@ -164,6 +197,7 @@ function setBackground(color) {
   bgButtons.forEach((b) => b.classList.toggle("active", b.dataset.bg === color));
   customBgInput.value = color;
   map.getContainer().style.background = color;
+  applyMapTheme(color);
 }
 bgButtons.forEach((b) => b.addEventListener("click", () => setBackground(b.dataset.bg)));
 customBgInput.addEventListener("input", (e) => setBackground(e.target.value.toUpperCase()));

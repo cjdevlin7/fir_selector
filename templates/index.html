@@ -15,6 +15,7 @@
 
   <aside id="sidebar">
     <header class="sb-header">
+      <a href="{{ url_for('how_to') }}" class="how-to-link">How to use this →</a>
       <h1>FIR Selector</h1>
       <p class="sb-sub">Click FIRs on the map or in the list, assign colors, export a PNG.</p>
     </header>
@@ -56,7 +57,7 @@
         <div id="selectedCount" class="selected-count">0 selected</div>
         <button id="exportBtn" class="export-btn">Export PNG</button>
       </div>
-      <div class="version-info">v{{ version }} · deployed {{ deployed_at }}</div>
+      <a href="{{ url_for('changelog') }}" class="version-info">v{{ version }} · deployed {{ deployed_at }}</a>
     </footer>
   </aside>
 

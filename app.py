@@ -89,6 +89,43 @@ def _get_version():
 APP_VERSION = _get_version()
 DEPLOYED_AT = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")  # process start time
 
+# Newest first. Add an entry here with each user-visible change.
+CHANGELOG = [
+    {
+        "date": "2026-08-18",
+        "items": [
+            "Added this Change Log page, and a How-To page linked above the title.",
+            "Picking a background color now re-themes the live map preview (dark/light tiles), not just the exported PNG.",
+            "Fixed FIR selection breaking after scrolling into a repeated copy of the world map (e.g. reaching Australia from the left) — the map is now clamped to a single copy.",
+        ],
+    },
+    {
+        "date": "2026-08-18",
+        "items": [
+            "Fixed a bug where an exported FIR could render tiny and offset from the map beneath it.",
+            "Land and ocean now render in distinct tones instead of a single flat color, matching the interactive map more closely.",
+        ],
+    },
+    {
+        "date": "2026-08-18",
+        "items": [
+            "Added the version number and deploy time shown under the Export PNG button.",
+        ],
+    },
+    {
+        "date": "2026-08-18",
+        "items": [
+            "Fixed the first PNG export after the app had been idle sometimes failing.",
+        ],
+    },
+    {
+        "date": "2026-08-18",
+        "items": [
+            "Initial release: color palette, FIR search/select by name, ICAO id, or map click, and full-resolution PNG export.",
+        ],
+    },
+]
+
 _fullres_gdf = None  # lazy-loaded, cached full-resolution FIR GeoDataFrame
 
 
@@ -108,6 +145,17 @@ def get_fullres_gdf():
 @app.route("/")
 def index():
     return render_template("index.html", version=APP_VERSION, deployed_at=DEPLOYED_AT)
+
+
+@app.route("/how-to")
+def how_to():
+    return render_template("how_to.html")
+
+
+@app.route("/changelog")
+def changelog():
+    return render_template("changelog.html", version=APP_VERSION,
+                            deployed_at=DEPLOYED_AT, entries=CHANGELOG)
 
 
 @app.route("/api/firs")

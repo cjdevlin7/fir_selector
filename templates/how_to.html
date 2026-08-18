@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How To — FIR Selector</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="doc-body">
+<div class="doc-page">
+  <a href="{{ url_for('index') }}" class="back-link">← Back to FIR Selector</a>
+  <h1>How to use FIR Selector</h1>
+  <p class="doc-sub">Pick a color, select FIRs, and export a full-resolution PNG.</p>
+
+  <ol class="doc-steps">
+    <li>
+      <h2>1. Pick a color</h2>
+      <p>Choose a swatch from the palette, or use the custom color picker. Whichever is highlighted as the "active color" gets applied to the next FIR you select.</p>
+    </li>
+    <li>
+      <h2>2. Select FIRs</h2>
+      <p>Click directly on a FIR's outline on the map, or search by name or ICAO id in the sidebar list and click a result — either way selects it in the active color and adds it to the list. Clicking an already-selected FIR again removes it.</p>
+    </li>
+    <li>
+      <h2>3. Adjust as you go</h2>
+      <p>Change the active color any time before selecting more FIRs. Use "Select filtered" to select every FIR currently matching your search, the × next to an entry to remove just that one, or "Clear all" to start over.</p>
+    </li>
+    <li>
+      <h2>4. Set a background</h2>
+      <p>Pick Dark, Light, or a custom color. It updates both the live map preview and the exported image.</p>
+    </li>
+    <li>
+      <h2>5. Export</h2>
+      <p>Click "Export PNG" to download a full-resolution image of your current selection, styled to match the background you picked. Each export gets a unique, timestamped filename.</p>
+    </li>
+  </ol>
+</div>
+</body>
+</html>
