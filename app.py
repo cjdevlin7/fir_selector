@@ -17,6 +17,7 @@ Run:
 """
 
 import colorsys
+import gc
 import io
 import json
 import os
@@ -48,7 +49,16 @@ FIR_EDGE_A   = 0.45
 FIR_EDGE_W   = 0.30
 
 FIG_W, FIG_H = 24, 12
-DPI          = 200
+DPI          = 150  # 3600x1800 output — the free Render tier's 512MB cap leaves
+                     # little headroom (a single render + logo composite peaks
+                     # around 420MB at DPI 200 vs ~340MB here); indistinguishable
+                     # at this resolution since it's still well above screen/deck use.
+
+# How far export geometry is simplified before rendering. At 4800px wide, one
+# pixel already covers ~0.075° of longitude, so detail finer than this is
+# invisible in the output anyway — simplifying first cuts the in-memory
+# GeoDataFrame from ~146MB to a fraction of that (341,859 -> ~72,000 points).
+EXPORT_SIMPLIFY_TOLERANCE = 0.005
 
 app = Flask(__name__)
 
@@ -125,6 +135,14 @@ CHANGELOG = [
     {
         "date": "2026-08-18",
         "items": [
+            "Reduced export memory usage (lower render DPI, simplified export "
+            "geometry, periodic worker recycling) to fix out-of-memory crashes "
+            "on the free hosting tier — no visible change in output quality.",
+        ],
+    },
+    {
+        "date": "2026-08-18",
+        "items": [
             "Added an \"Include Aireon Logo\" option — white on dark backgrounds, "
             "dark on light ones — shown as a live preview in the map's corner and "
             "included in the exported PNG when checked.",
@@ -177,6 +195,7 @@ def get_fullres_gdf():
         raw_ids = [feat.get("id") for feat in raw["features"]]
         gdf["id"] = raw_ids
         gdf = gdf[~gdf.geometry.is_empty & gdf.geometry.notna()].copy()
+        gdf["geometry"] = gdf.geometry.simplify(EXPORT_SIMPLIFY_TOLERANCE, preserve_topology=True)
         _fullres_gdf = gdf
     return _fullres_gdf
 
@@ -275,6 +294,12 @@ def api_render():
 
     if include_logo:
         buf = _composite_logo(buf.getvalue(), bg_color)
+
+    # Matplotlib/Agg's C-level buffers for a render this size don't always
+    # get handed back to the OS promptly on a plain refcount drop — on a
+    # 512MB instance, back-to-back exports can stack peak usage instead of
+    # each starting fresh. An explicit collect closes that gap.
+    gc.collect()
 
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     return send_file(buf, mimetype="image/png",
