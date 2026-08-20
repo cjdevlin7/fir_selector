@@ -136,8 +136,8 @@ CHANGELOG = [
         "date": "2026-08-20",
         "items": [
             "Added a \"Lists\" dropdown above the FIR search box — pick a named "
-            "set of FIRs (starting with SB-VHF) and every FIR in it gets added "
-            "to the current selection in the active color.",
+            "set of FIRs (starting with Customer FIRs) and every FIR in it gets "
+            "added to the current selection in the active color.",
         ],
     },
     {
@@ -195,7 +195,7 @@ CHANGELOG = [
 # FIR in it gets added to the current selection in the active color. Add
 # more entries here as needed; each key becomes a dropdown option.
 FIR_LISTS = {
-    "SB-VHF": [
+    "Customer FIRs": [
         "FIR VANCOUVER", "FIR EDMONTON", "FIR WINNIPEG", "FIR TORONTO",
         "FIR MONTREAL", "FIR MONCTON", "FIR GANDER DOMESTIC", "FIR GANDER OCEANIC",
         "FIR BOSTON",
