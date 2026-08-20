@@ -135,6 +135,16 @@ CHANGELOG = [
     {
         "date": "2026-08-20",
         "items": [
+            "Added \"Save as list…\" and \"Load list from file…\" — save your "
+            "current selection and its color to a .json file, and load one back "
+            "later (via the Lists dropdown or by dragging the file onto the map) "
+            "with a dialog to confirm or override the color before applying. "
+            "Sharing a list with someone else is just sending them the file.",
+        ],
+    },
+    {
+        "date": "2026-08-20",
+        "items": [
             "Added a \"Lists\" dropdown above the FIR search box — pick a named "
             "set of FIRs (starting with Customer FIRs) and every FIR in it gets "
             "added to the current selection in the active color.",
