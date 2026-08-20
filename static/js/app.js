@@ -382,12 +382,12 @@ saveListBtn.addEventListener("click", () => {
   const name = prompt("Name this list:");
   if (!name || !name.trim()) return;
 
-  const firs = [...state.selections.keys()].map((id) => {
+  const firs = [...state.selections.entries()].map(([id, color]) => {
     const f = state.features.get(id);
-    return { id, name: f ? f.name : id };
+    return { id, name: f ? f.name : id, color };
   });
 
-  const payload = { version: 1, name: name.trim(), color: state.activeColor, firs };
+  const payload = { version: 1, name: name.trim(), firs };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
