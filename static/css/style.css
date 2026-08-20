@@ -234,6 +234,7 @@ html, body {
 }
 
 .link-btn:hover { text-decoration: underline; }
+.link-btn:disabled { opacity: 0.4; cursor: default; pointer-events: none; }
 
 .fir-list {
   flex: 1;
@@ -421,6 +422,129 @@ html, body {
   font-size: 13px;
   color: var(--text-dim);
 }
+
+/* ── Drag-and-drop hint ──────────────────────────────────────────────── */
+
+.drop-hint {
+  position: absolute;
+  inset: 0;
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(18, 23, 28, 0.55);
+  border: 3px dashed var(--accent);
+  pointer-events: none;
+}
+
+.drop-hint.hidden { display: none; }
+
+.drop-hint-inner {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 22px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* ── Load-list modal ─────────────────────────────────────────────────── */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 13, 16, 0.65);
+}
+
+.modal-overlay.hidden { display: none; }
+
+.modal-card {
+  width: 360px;
+  max-width: calc(100vw - 40px);
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 22px;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.45);
+  color: var(--text);
+}
+
+.modal-card h2 {
+  font-size: 16px;
+  font-weight: 650;
+  margin: 0 0 10px;
+}
+
+.modal-summary {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin: 0 0 6px;
+  line-height: 1.5;
+}
+
+.modal-warning {
+  font-size: 12.5px;
+  color: #f0b429;
+  margin: 0 0 6px;
+  line-height: 1.5;
+}
+
+.modal-warning.hidden { display: none; }
+
+.modal-color-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 14px;
+  font-size: 13px;
+}
+
+.modal-color-row input[type="color"] {
+  width: 40px;
+  height: 30px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.modal-btn-secondary,
+.modal-btn-primary {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border);
+}
+
+.modal-btn-secondary {
+  background: var(--bg-card);
+  color: var(--text);
+}
+
+.modal-btn-secondary:hover { background: var(--bg-card-hover); }
+
+.modal-btn-primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.modal-btn-primary:hover { background: #2f6fdb; }
 
 /* ── Doc pages (How To / Change Log) ─────────────────────────────────── */
 

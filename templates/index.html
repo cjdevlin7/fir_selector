@@ -50,11 +50,14 @@
       <h2>FIRs <span id="firCount" class="count-badge"></span></h2>
       <select id="listSelect" class="list-select">
         <option value="">Apply a list…</option>
+        <option value="__load_file__">Load list from file…</option>
       </select>
+      <input type="file" id="loadListFile" accept="application/json,.json" hidden>
       <input type="text" id="searchBox" placeholder="Search by name or ICAO id…" autocomplete="off">
       <div class="list-actions">
         <button id="selectAllBtn" class="link-btn">Select filtered</button>
         <button id="clearBtn" class="link-btn">Clear all</button>
+        <button id="saveListBtn" class="link-btn">Save as list…</button>
       </div>
       <div id="firList" class="fir-list"></div>
     </section>
@@ -75,12 +78,36 @@
       <img id="logoPreview" class="logo-preview-img" alt="Aireon logo preview">
     </div>
 
+    <div id="dropHint" class="drop-hint hidden">
+      <div class="drop-hint-inner">Drop list file to load</div>
+    </div>
+
     <div id="loadingOverlay" class="loading-overlay hidden">
       <div class="spinner"></div>
       <div id="loadingText">Rendering…</div>
     </div>
   </main>
 
+</div>
+
+<div id="loadListModal" class="modal-overlay hidden">
+  <div class="modal-card">
+    <h2 id="loadListTitle">Load list</h2>
+    <p id="loadListSummary" class="modal-summary"></p>
+    <p id="loadListWarning" class="modal-warning hidden"></p>
+    <label class="logo-checkbox modal-checkbox">
+      <input type="checkbox" id="loadListUseSaved" checked>
+      <span>Use each FIR's saved color</span>
+    </label>
+    <div class="modal-color-row">
+      <label for="loadListColor">Color to apply to all</label>
+      <input type="color" id="loadListColor">
+    </div>
+    <div class="modal-actions">
+      <button id="loadListCancel" class="modal-btn-secondary">Cancel</button>
+      <button id="loadListConfirm" class="modal-btn-primary">Load</button>
+    </div>
+  </div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"

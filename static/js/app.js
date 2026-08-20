@@ -164,6 +164,7 @@ function updateFooter() {
   const n = state.selections.size;
   document.getElementById("selectedCount").textContent = `${n} selected`;
   document.getElementById("exportBtn").disabled = n === 0;
+  document.getElementById("saveListBtn").disabled = n === 0;
 }
 
 // ── Sidebar: palette ─────────────────────────────────────────────────────
@@ -342,7 +343,14 @@ fetch("/api/lists")
 listSelect.addEventListener("change", (e) => {
   const listName = e.target.value;
   listSelect.value = ""; // reset to placeholder immediately — this is a one-shot action, not a persistent filter
-  if (!listName || !state.lists[listName]) return;
+  if (!listName) return;
+
+  if (listName === "__load_file__") {
+    loadListFileInput.click();
+    return;
+  }
+
+  if (!state.lists[listName]) return;
 
   const nameToId = new Map();
   state.features.forEach((f, id) => nameToId.set(f.name.toUpperCase(), id));
@@ -363,6 +371,158 @@ listSelect.addEventListener("change", (e) => {
     console.warn(`List "${listName}": no FIR found matching`, missing);
   }
   updateFooter();
+});
+
+// ── Sidebar: save a list to a file ───────────────────────────────────────
+
+const saveListBtn = document.getElementById("saveListBtn");
+
+saveListBtn.addEventListener("click", () => {
+  if (state.selections.size === 0) return;
+  const name = prompt("Name this list:");
+  if (!name || !name.trim()) return;
+
+  const firs = [...state.selections.keys()].map((id) => {
+    const f = state.features.get(id);
+    return { id, name: f ? f.name : id };
+  });
+
+  const payload = { version: 1, name: name.trim(), color: state.activeColor, firs };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${name.trim().replace(/[^a-z0-9_-]+/gi, "_")}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+});
+
+// ── Load a list from a file (file picker or drag-and-drop) ──────────────
+
+const loadListFileInput = document.getElementById("loadListFile");
+const dropHint = document.getElementById("dropHint");
+const loadListModal = document.getElementById("loadListModal");
+const loadListTitle = document.getElementById("loadListTitle");
+const loadListSummary = document.getElementById("loadListSummary");
+const loadListWarning = document.getElementById("loadListWarning");
+const loadListColor = document.getElementById("loadListColor");
+const loadListCancel = document.getElementById("loadListCancel");
+const loadListConfirm = document.getElementById("loadListConfirm");
+
+const HEX_COLOR_RE = /^#[0-9a-f]{6}$/i;
+
+let pendingLoadFirs = null; // [id, ...] resolved against the current dataset
+
+function parseListFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Could not read the file."));
+    reader.onload = () => {
+      let data;
+      try {
+        data = JSON.parse(reader.result);
+      } catch (err) {
+        reject(new Error("That file isn't valid JSON."));
+        return;
+      }
+      if (!data || typeof data !== "object" || !Array.isArray(data.firs)) {
+        reject(new Error("That file doesn't look like a FIR Selector list."));
+        return;
+      }
+      resolve(data);
+    };
+    reader.readAsText(file);
+  });
+}
+
+function openLoadDialog(data) {
+  const nameToId = new Map();
+  state.features.forEach((f, id) => nameToId.set(f.name.toUpperCase(), id));
+  const idSet = new Set(state.features.keys());
+
+  const resolved = [];
+  const missing = [];
+  data.firs.forEach((entry) => {
+    const id = idSet.has(entry.id) ? entry.id : nameToId.get((entry.name || "").toUpperCase());
+    if (id) {
+      resolved.push(id);
+    } else {
+      missing.push(entry.name || entry.id || "unknown");
+    }
+  });
+
+  pendingLoadFirs = resolved;
+
+  loadListTitle.textContent = data.name ? `Load "${data.name}"` : "Load list";
+  loadListSummary.textContent = `${resolved.length} FIR${resolved.length === 1 ? "" : "s"} will be added to your current selection.`;
+  if (missing.length) {
+    loadListWarning.textContent = `${missing.length} not found in the current dataset and will be skipped: ${missing.join(", ")}`;
+    loadListWarning.hidden = false;
+  } else {
+    loadListWarning.hidden = true;
+  }
+  loadListColor.value = HEX_COLOR_RE.test(data.color) ? data.color : state.activeColor;
+
+  loadListModal.classList.remove("hidden");
+}
+
+function closeLoadDialog() {
+  loadListModal.classList.add("hidden");
+  pendingLoadFirs = null;
+  loadListFileInput.value = ""; // allow re-selecting the same file later
+}
+
+loadListCancel.addEventListener("click", closeLoadDialog);
+
+loadListConfirm.addEventListener("click", () => {
+  if (!pendingLoadFirs) return;
+  const color = loadListColor.value.toUpperCase();
+  pendingLoadFirs.forEach((id) => {
+    state.selections.set(id, color);
+    restyle(id);
+    renderRowState(id);
+  });
+  updateFooter();
+  closeLoadDialog();
+});
+
+function handleListFile(file) {
+  if (!file) return;
+  parseListFile(file)
+    .then(openLoadDialog)
+    .catch((err) => {
+      alert(err.message);
+      loadListFileInput.value = "";
+    });
+}
+
+loadListFileInput.addEventListener("change", (e) => handleListFile(e.target.files[0]));
+
+// Drag-and-drop a list file onto the map
+const mapWrapEl = document.getElementById("mapWrap");
+let dragDepth = 0;
+mapWrapEl.addEventListener("dragenter", (e) => {
+  if (!e.dataTransfer.types.includes("Files")) return;
+  e.preventDefault();
+  dragDepth++;
+  dropHint.classList.remove("hidden");
+});
+mapWrapEl.addEventListener("dragover", (e) => {
+  if (!e.dataTransfer.types.includes("Files")) return;
+  e.preventDefault();
+});
+mapWrapEl.addEventListener("dragleave", () => {
+  dragDepth = Math.max(0, dragDepth - 1);
+  if (dragDepth === 0) dropHint.classList.add("hidden");
+});
+mapWrapEl.addEventListener("drop", (e) => {
+  e.preventDefault();
+  dragDepth = 0;
+  dropHint.classList.add("hidden");
+  const file = e.dataTransfer.files && e.dataTransfer.files[0];
+  handleListFile(file);
 });
 
 // ── Export ────────────────────────────────────────────────────────────────
