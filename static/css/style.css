@@ -496,12 +496,21 @@ html, body {
 
 .modal-warning.hidden { display: none; }
 
+.modal-checkbox {
+  margin-top: 14px;
+}
+
 .modal-color-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 14px;
+  margin-top: 10px;
   font-size: 13px;
+}
+
+.modal-color-row.disabled {
+  opacity: 0.4;
+  pointer-events: none;
 }
 
 .modal-color-row input[type="color"] {
