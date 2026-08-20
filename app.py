@@ -133,6 +133,14 @@ DEPLOYED_AT = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")  # proce
 # Newest first. Add an entry here with each user-visible change.
 CHANGELOG = [
     {
+        "date": "2026-08-20",
+        "items": [
+            "Added a \"Lists\" dropdown above the FIR search box — pick a named "
+            "set of FIRs (starting with SB-VHF) and every FIR in it gets added "
+            "to the current selection in the active color.",
+        ],
+    },
+    {
         "date": "2026-08-18",
         "items": [
             "Reduced export memory usage (lower render DPI, simplified export "
@@ -183,6 +191,46 @@ CHANGELOG = [
     },
 ]
 
+# Named FIR sets selectable from the "Lists" dropdown — pick one, and every
+# FIR in it gets added to the current selection in the active color. Add
+# more entries here as needed; each key becomes a dropdown option.
+FIR_LISTS = {
+    "SB-VHF": [
+        "FIR VANCOUVER", "FIR EDMONTON", "FIR WINNIPEG", "FIR TORONTO",
+        "FIR MONTREAL", "FIR MONCTON", "FIR GANDER DOMESTIC", "FIR GANDER OCEANIC",
+        "FIR BOSTON",
+        "FIR NUUK",
+        "FIR REYKJAVIK",
+        "FIR BODO OCEANIC",
+        "FIR KOBENHAVN",
+        "FIR SHANNON",
+        "FIR SHANWICK OCEANIC",
+        "FIR SANTA MARIA OCEANIC",
+        "FIR CENTRAL AMERICAN",
+        "FIR CURACAO",
+        "FIR PIARCO",
+        "FIR CAYENNE",
+        "FIR AKTOBE", "FIR ALMATY", "FIR ASTANA", "FIR SHYMKENT",
+        "FIR BAKU", "FIR BAKU MAINLAND",
+        "FIR SAL OCEANIC",
+        "FIR DAKAR", "FIR DAKAR OCEANIC",
+        "FIR ROBERTS",
+        "FIR NIAMEY",
+        "FIR KANO",
+        "FIR N DJAMENA",
+        "FIR BRAZZAVILLE",
+        "FIR KINSHASA",
+        "FIR JOHANNESBURG", "FIR CAPETOWN", "FIR JOHANNESBURG OCEANIC",
+        "FIR ANTANANARIVO",
+        "FIR SEYCHELLES",
+        "FIR MUMBAI", "FIR CHENNAI", "FIR KOLKATA",
+        "FIR DHAKA",
+        "FIR BANGKOK",
+        "FIR SINGAPORE",
+        "FIR PORT MORESBY",
+    ],
+}
+
 _fullres_gdf = None  # lazy-loaded, cached full-resolution FIR GeoDataFrame
 
 
@@ -222,6 +270,12 @@ def api_firs():
     with open(SIMPLIFIED_PATH) as f:
         data = json.load(f)
     return jsonify(data)
+
+
+@app.route("/api/lists")
+def api_lists():
+    """Named FIR sets for the "Lists" dropdown — { list name: [FIR names] }."""
+    return jsonify(FIR_LISTS)
 
 
 @app.route("/api/render", methods=["POST"])

@@ -190,6 +190,21 @@ html, body {
 
 /* ── Search + list ───────────────────────────────────────────────────── */
 
+.list-select {
+  width: 100%;
+  padding: 9px 11px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+}
+
+.list-select:focus { border-color: var(--accent); }
+
 #searchBox {
   width: 100%;
   padding: 9px 11px;

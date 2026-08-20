@@ -321,6 +321,50 @@ searchBox.addEventListener("input", (e) => {
 document.getElementById("selectAllBtn").addEventListener("click", selectAllFiltered);
 document.getElementById("clearBtn").addEventListener("click", clearAll);
 
+// ── Sidebar: lists ───────────────────────────────────────────────────────
+
+const listSelect = document.getElementById("listSelect");
+state.lists = {};
+
+fetch("/api/lists")
+  .then((r) => r.json())
+  .then((lists) => {
+    state.lists = lists;
+    Object.keys(lists).sort().forEach((name) => {
+      const opt = document.createElement("option");
+      opt.value = name;
+      opt.textContent = name;
+      listSelect.appendChild(opt);
+    });
+  })
+  .catch((err) => console.error("Failed to load lists", err));
+
+listSelect.addEventListener("change", (e) => {
+  const listName = e.target.value;
+  listSelect.value = ""; // reset to placeholder immediately — this is a one-shot action, not a persistent filter
+  if (!listName || !state.lists[listName]) return;
+
+  const nameToId = new Map();
+  state.features.forEach((f, id) => nameToId.set(f.name.toUpperCase(), id));
+
+  const missing = [];
+  state.lists[listName].forEach((wantedName) => {
+    const id = nameToId.get(wantedName.toUpperCase());
+    if (!id) {
+      missing.push(wantedName);
+      return;
+    }
+    state.selections.set(id, state.activeColor);
+    restyle(id);
+    renderRowState(id);
+  });
+
+  if (missing.length) {
+    console.warn(`List "${listName}": no FIR found matching`, missing);
+  }
+  updateFooter();
+});
+
 // ── Export ────────────────────────────────────────────────────────────────
 
 const exportBtn = document.getElementById("exportBtn");
